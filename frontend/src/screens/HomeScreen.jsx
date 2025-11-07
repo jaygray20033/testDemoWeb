@@ -1,3 +1,5 @@
+'use client';
+
 import { Row, Col } from 'react-bootstrap';
 import { useParams } from 'react-router-dom';
 import { useGetProductsQuery } from '../slices/productsApiSlice';
@@ -8,6 +10,7 @@ import Message from '../components/Message';
 import Paginate from '../components/Paginate';
 import ProductCarousel from '../components/ProductCarousel';
 import Meta from '../components/Meta';
+import { vi } from '../i18n/translations';
 
 const HomeScreen = () => {
   const { pageNumber, keyword } = useParams();
@@ -23,7 +26,7 @@ const HomeScreen = () => {
         <ProductCarousel />
       ) : (
         <Link to='/' className='btn btn-light mb-4'>
-          Go Back
+          {vi.goBack}
         </Link>
       )}
       {isLoading ? (
@@ -35,7 +38,7 @@ const HomeScreen = () => {
       ) : (
         <>
           <Meta />
-          <h1>Latest Products</h1>
+          <h1>{vi.latestProducts}</h1>
           <Row>
             {data.products.map((product) => (
               <Col key={product._id} sm={12} md={6} lg={4} xl={3}>

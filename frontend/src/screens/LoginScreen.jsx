@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Form, Button, Row, Col } from 'react-bootstrap';
@@ -8,6 +10,7 @@ import FormContainer from '../components/FormContainer';
 import { useLoginMutation } from '../slices/usersApiSlice';
 import { setCredentials } from '../slices/authSlice';
 import { toast } from 'react-toastify';
+import { vi } from '../i18n/translations';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -43,31 +46,31 @@ const LoginScreen = () => {
 
   return (
     <FormContainer>
-      <h1>Sign In</h1>
+      <h1>{vi.signIn}</h1>
 
       <Form onSubmit={submitHandler}>
         <Form.Group className='my-2' controlId='email'>
-          <Form.Label>Email Address</Form.Label>
+          <Form.Label>{vi.emailAddress}</Form.Label>
           <Form.Control
             type='email'
-            placeholder='Enter email'
+            placeholder={vi.enterEmail}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           ></Form.Control>
         </Form.Group>
 
         <Form.Group className='my-2' controlId='password'>
-          <Form.Label>Password</Form.Label>
+          <Form.Label>{vi.password}</Form.Label>
           <Form.Control
             type='password'
-            placeholder='Enter password'
+            placeholder={vi.enterPassword}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           ></Form.Control>
         </Form.Group>
 
         <Button disabled={isLoading} type='submit' variant='primary'>
-          Sign In
+          {vi.signIn}
         </Button>
 
         {isLoading && <Loader />}
@@ -75,9 +78,9 @@ const LoginScreen = () => {
 
       <Row className='py-3'>
         <Col>
-          New Customer?{' '}
+          {vi.newCustomer}{' '}
           <Link to={redirect ? `/register?redirect=${redirect}` : '/register'}>
-            Register
+            {vi.register}
           </Link>
         </Col>
       </Row>

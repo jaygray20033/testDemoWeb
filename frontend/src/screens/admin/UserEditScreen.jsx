@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Form, Button } from 'react-bootstrap';
@@ -10,6 +12,7 @@ import {
   useGetUserDetailsQuery,
   useUpdateUserMutation,
 } from '../../slices/usersApiSlice';
+import { vi } from '../../i18n/translations';
 
 const UserEditScreen = () => {
   const { id: userId } = useParams();
@@ -32,7 +35,7 @@ const UserEditScreen = () => {
     e.preventDefault();
     try {
       await updateUser({ userId, name, email, isAdmin });
-      toast.success('user updated successfully');
+      toast.success(vi.userUpdated);
       refetch();
       navigate('/admin/userlist');
     } catch (err) {
@@ -51,10 +54,10 @@ const UserEditScreen = () => {
   return (
     <>
       <Link to='/admin/userlist' className='btn btn-light my-3'>
-        Go Back
+        {vi.goBack}
       </Link>
       <FormContainer>
-        <h1>Edit User</h1>
+        <h1>{vi.editUser}</h1>
         {loadingUpdate && <Loader />}
         {isLoading ? (
           <Loader />
@@ -65,20 +68,20 @@ const UserEditScreen = () => {
         ) : (
           <Form onSubmit={submitHandler}>
             <Form.Group className='my-2' controlId='name'>
-              <Form.Label>Name</Form.Label>
+              <Form.Label>{vi.name}</Form.Label>
               <Form.Control
                 type='name'
-                placeholder='Enter name'
+                placeholder='Nhập tên'
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               ></Form.Control>
             </Form.Group>
 
             <Form.Group className='my-2' controlId='email'>
-              <Form.Label>Email Address</Form.Label>
+              <Form.Label>{vi.email}</Form.Label>
               <Form.Control
                 type='email'
-                placeholder='Enter email'
+                placeholder='Nhập email'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               ></Form.Control>
@@ -87,14 +90,14 @@ const UserEditScreen = () => {
             <Form.Group className='my-2' controlId='isadmin'>
               <Form.Check
                 type='checkbox'
-                label='Is Admin'
+                label={vi.isAdmin}
                 checked={isAdmin}
                 onChange={(e) => setIsAdmin(e.target.checked)}
               ></Form.Check>
             </Form.Group>
 
             <Button type='submit' variant='primary'>
-              Update
+              {vi.update}
             </Button>
           </Form>
         )}

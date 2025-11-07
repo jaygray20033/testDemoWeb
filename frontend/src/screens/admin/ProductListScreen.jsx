@@ -1,3 +1,5 @@
+'use client';
+
 import { Table, Button, Row, Col } from 'react-bootstrap';
 import { FaEdit, FaPlus, FaTrash } from 'react-icons/fa';
 import { Link, useParams } from 'react-router-dom';
@@ -10,6 +12,7 @@ import {
   useCreateProductMutation,
 } from '../../slices/productsApiSlice';
 import { toast } from 'react-toastify';
+import { vi } from '../../i18n/translations';
 
 const ProductListScreen = () => {
   const { pageNumber } = useParams();
@@ -22,10 +25,11 @@ const ProductListScreen = () => {
     useDeleteProductMutation();
 
   const deleteHandler = async (id) => {
-    if (window.confirm('Are you sure')) {
+    if (window.confirm(vi.confirmDelete)) {
       try {
         await deleteProduct(id);
         refetch();
+        toast.success(vi.productDeleted);
       } catch (err) {
         toast.error(err?.data?.message || err.error);
       }
@@ -36,10 +40,11 @@ const ProductListScreen = () => {
     useCreateProductMutation();
 
   const createProductHandler = async () => {
-    if (window.confirm('Are you sure you want to create a new product?')) {
+    if (window.confirm(vi.confirmCreate)) {
       try {
         await createProduct();
         refetch();
+        toast.success(vi.productCreated);
       } catch (err) {
         toast.error(err?.data?.message || err.error);
       }
@@ -50,11 +55,11 @@ const ProductListScreen = () => {
     <>
       <Row className='align-items-center'>
         <Col>
-          <h1>Products</h1>
+          <h1>{vi.products}</h1>
         </Col>
         <Col className='text-end'>
           <Button className='my-3' onClick={createProductHandler}>
-            <FaPlus /> Create Product
+            <FaPlus /> {vi.createProduct}
           </Button>
         </Col>
       </Row>
@@ -70,11 +75,11 @@ const ProductListScreen = () => {
           <Table striped bordered hover responsive className='table-sm'>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>NAME</th>
-                <th>PRICE</th>
-                <th>CATEGORY</th>
-                <th>BRAND</th>
+                <th>{vi.id}</th>
+                <th>{vi.name}</th>
+                <th>{vi.price}</th>
+                <th>{vi.category}</th>
+                <th>{vi.brand}</th>
                 <th></th>
               </tr>
             </thead>

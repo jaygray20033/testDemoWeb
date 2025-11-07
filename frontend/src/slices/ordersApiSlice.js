@@ -23,6 +23,12 @@ export const orderApiSlice = apiSlice.injectEndpoints({
         body: details,
       }),
     }),
+    getVNPayConfig: builder.query({
+      query: () => ({
+        url: '/api/config/vnpay',
+      }),
+      keepUnusedDataFor: 5,
+    }),
     getPaypalClientId: builder.query({
       query: () => ({
         url: PAYPAL_URL,
@@ -54,6 +60,7 @@ export const {
   useCreateOrderMutation,
   useGetOrderDetailsQuery,
   usePayOrderMutation,
+  useGetVNPayConfigQuery,
   useGetPaypalClientIdQuery,
   useGetMyOrdersQuery,
   useGetOrdersQuery,

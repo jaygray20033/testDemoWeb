@@ -1,3 +1,4 @@
+// backend/routes/orderRoutes.js
 import express from 'express';
 const router = express.Router();
 import {
@@ -5,6 +6,8 @@ import {
   getMyOrders,
   getOrderById,
   updateOrderToPaid,
+  createVNPayPayment,
+  vnpayReturn, // ← THÊM
   updateOrderToDelivered,
   getOrders,
 } from '../controllers/orderController.js';
@@ -14,6 +17,10 @@ router.route('/').post(protect, addOrderItems).get(protect, admin, getOrders);
 router.route('/mine').get(protect, getMyOrders);
 router.route('/:id').get(protect, getOrderById);
 router.route('/:id/pay').put(protect, updateOrderToPaid);
+router.route('/:id/vnpay').post(protect, createVNPayPayment);
 router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);
+
+// THÊM DÒNG NÀY
+router.get('/vnpay/return', vnpayReturn);
 
 export default router;

@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+'use client';
+
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Row, Col, ListGroup, Image, Card, Button } from 'react-bootstrap';
-import { PayPalButtons, usePayPalScriptReducer } from '@paypal/react-paypal-js';
 import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import Message from '../components/Message';
@@ -9,12 +10,14 @@ import Loader from '../components/Loader';
 import {
   useDeliverOrderMutation,
   useGetOrderDetailsQuery,
-  useGetPaypalClientIdQuery,
   usePayOrderMutation,
+  useGetVNPayConfigQuery,
 } from '../slices/ordersApiSlice';
+import { vi } from '../i18n/translations';
 
 const OrderScreen = () => {
   const { id: orderId } = useParams();
+  const [isProcessingVNPay, setIsProcessingVNPay] = useState(false);
 
   const {
     data: order,
@@ -24,77 +27,51 @@ const OrderScreen = () => {
   } = useGetOrderDetailsQuery(orderId);
 
   const [payOrder, { isLoading: loadingPay }] = usePayOrderMutation();
-
   const [deliverOrder, { isLoading: loadingDeliver }] =
     useDeliverOrderMutation();
 
   const { userInfo } = useSelector((state) => state.auth);
 
-  const [{ isPending }, paypalDispatch] = usePayPalScriptReducer();
-
   const {
-    data: paypal,
-    isLoading: loadingPayPal,
-    error: errorPayPal,
-  } = useGetPaypalClientIdQuery();
+    data: vnpayConfig,
+    isLoading: loadingVNPayConfig,
+    error: errorVNPayConfig,
+  } = useGetVNPayConfigQuery();
 
-  useEffect(() => {
-    if (!errorPayPal && !loadingPayPal && paypal.clientId) {
-      const loadPaypalScript = async () => {
-        paypalDispatch({
-          type: 'resetOptions',
-          value: {
-            'client-id': paypal.clientId,
-            currency: 'USD',
-          },
-        });
-        paypalDispatch({ type: 'setLoadingStatus', value: 'pending' });
-      };
-      if (order && !order.isPaid) {
-        if (!window.paypal) {
-          loadPaypalScript();
-        }
-      }
+  const handleVNPayPayment = async () => {
+    if (!order || order.isPaid) {
+      toast.error('Không thể thanh toán đơn hàng này');
+      return;
     }
-  }, [errorPayPal, loadingPayPal, order, paypal, paypalDispatch]);
 
-  function onApprove(data, actions) {
-    return actions.order.capture().then(async function (details) {
-      try {
-        await payOrder({ orderId, details });
-        refetch();
-        toast.success('Order is paid');
-      } catch (err) {
-        toast.error(err?.data?.message || err.error);
-      }
-    });
-  }
+    setIsProcessingVNPay(true);
 
-  // TESTING ONLY! REMOVE BEFORE PRODUCTION
-  // async function onApproveTest() {
-  //   await payOrder({ orderId, details: { payer: {} } });
-  //   refetch();
-
-  //   toast.success('Order is paid');
-  // }
-
-  function onError(err) {
-    toast.error(err.message);
-  }
-
-  function createOrder(data, actions) {
-    return actions.order
-      .create({
-        purchase_units: [
-          {
-            amount: { value: order.totalPrice },
-          },
-        ],
-      })
-      .then((orderID) => {
-        return orderID;
+    try {
+      // Call backend to create VNPay payment URL
+      const response = await fetch('/api/orders/' + orderId + '/vnpay', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: order.totalPrice,
+          orderInfo: `Payment for order ${orderId}`,
+        }),
       });
-  }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Lỗi tạo URL thanh toán');
+      }
+
+      // Redirect to VNPay payment page
+      window.location.href = data.paymentUrl;
+    } catch (err) {
+      toast.error(err.message || 'Lỗi khi xử lý thanh toán');
+      setIsProcessingVNPay(false);
+    }
+  };
 
   const deliverHandler = async () => {
     await deliverOrder(orderId);
@@ -107,51 +84,55 @@ const OrderScreen = () => {
     <Message variant='danger'>{error.data.message}</Message>
   ) : (
     <>
-      <h1>Order {order._id}</h1>
+      <h1>
+        {vi.paymentInfo} {order._id}
+      </h1>
       <Row>
         <Col md={8}>
           <ListGroup variant='flush'>
             <ListGroup.Item>
-              <h2>Shipping</h2>
+              <h2>{vi.shipping}</h2>
               <p>
-                <strong>Name: </strong> {order.user.name}
+                <strong>{vi.login}: </strong> {order.user.name}
               </p>
               <p>
-                <strong>Email: </strong>{' '}
+                <strong>Email: </strong>
                 <a href={`mailto:${order.user.email}`}>{order.user.email}</a>
               </p>
               <p>
-                <strong>Address:</strong>
+                <strong>{vi.address}:</strong>
                 {order.shippingAddress.address}, {order.shippingAddress.city}{' '}
                 {order.shippingAddress.postalCode},{' '}
                 {order.shippingAddress.country}
               </p>
               {order.isDelivered ? (
                 <Message variant='success'>
-                  Delivered on {order.deliveredAt}
+                  {vi.delivered}: {order.deliveredAt}
                 </Message>
               ) : (
-                <Message variant='danger'>Not Delivered</Message>
+                <Message variant='danger'>{vi.notDelivered}</Message>
               )}
             </ListGroup.Item>
 
             <ListGroup.Item>
-              <h2>Payment Method</h2>
+              <h2>{vi.paymentMethod}</h2>
               <p>
-                <strong>Method: </strong>
+                <strong>{vi.method}: </strong>
                 {order.paymentMethod}
               </p>
               {order.isPaid ? (
-                <Message variant='success'>Paid on {order.paidAt}</Message>
+                <Message variant='success'>
+                  {vi.paid}: {order.paidAt}
+                </Message>
               ) : (
-                <Message variant='danger'>Not Paid</Message>
+                <Message variant='danger'>{vi.notPaid}</Message>
               )}
             </ListGroup.Item>
 
             <ListGroup.Item>
-              <h2>Order Items</h2>
+              <h2>{vi.orderItems}</h2>
               {order.orderItems.length === 0 ? (
-                <Message>Order is empty</Message>
+                <Message>{vi.orderIsEmpty}</Message>
               ) : (
                 <ListGroup variant='flush'>
                   {order.orderItems.map((item, index) => (
@@ -159,7 +140,7 @@ const OrderScreen = () => {
                       <Row>
                         <Col md={1}>
                           <Image
-                            src={item.image}
+                            src={item.image || '/placeholder.svg'}
                             alt={item.name}
                             fluid
                             rounded
@@ -185,56 +166,46 @@ const OrderScreen = () => {
           <Card>
             <ListGroup variant='flush'>
               <ListGroup.Item>
-                <h2>Order Summary</h2>
+                <h2>{vi.orderSummary}</h2>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Row>
-                  <Col>Items</Col>
+                  <Col>{vi.items}</Col>
                   <Col>${order.itemsPrice}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Row>
-                  <Col>Shipping</Col>
+                  <Col>{vi.shipping}</Col>
                   <Col>${order.shippingPrice}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Row>
-                  <Col>Tax</Col>
+                  <Col>{vi.tax}</Col>
                   <Col>${order.taxPrice}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Row>
-                  <Col>Total</Col>
+                  <Col>{vi.total}</Col>
                   <Col>${order.totalPrice}</Col>
                 </Row>
               </ListGroup.Item>
               {!order.isPaid && (
                 <ListGroup.Item>
                   {loadingPay && <Loader />}
-
-                  {isPending ? (
+                  {isProcessingVNPay ? (
                     <Loader />
                   ) : (
-                    <div>
-                      {/* THIS BUTTON IS FOR TESTING! REMOVE BEFORE PRODUCTION! */}
-                      {/* <Button
-                        style={{ marginBottom: '10px' }}
-                        onClick={onApproveTest}
-                      >
-                        Test Pay Order
-                      </Button> */}
-
-                      <div>
-                        <PayPalButtons
-                          createOrder={createOrder}
-                          onApprove={onApprove}
-                          onError={onError}
-                        ></PayPalButtons>
-                      </div>
-                    </div>
+                    <Button
+                      type='button'
+                      className='btn-block'
+                      onClick={handleVNPayPayment}
+                      disabled={isProcessingVNPay}
+                    >
+                      Thanh Toán VNPay
+                    </Button>
                   )}
                 </ListGroup.Item>
               )}
@@ -248,10 +219,10 @@ const OrderScreen = () => {
                   <ListGroup.Item>
                     <Button
                       type='button'
-                      className='btn btn-block'
+                      className='btn-block'
                       onClick={deliverHandler}
                     >
-                      Mark As Delivered
+                      {vi.markAsDelivered}
                     </Button>
                   </ListGroup.Item>
                 )}

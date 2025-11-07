@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+'use client';
+
+import { useEffect, useState } from 'react';
 import { Table, Form, Button, Row, Col } from 'react-bootstrap';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaTimes } from 'react-icons/fa';
@@ -10,6 +12,7 @@ import { useProfileMutation } from '../slices/usersApiSlice';
 import { useGetMyOrdersQuery } from '../slices/ordersApiSlice';
 import { setCredentials } from '../slices/authSlice';
 import { Link } from 'react-router-dom';
+import { vi } from '../i18n/translations';
 
 const ProfileScreen = () => {
   const [name, setName] = useState('');
@@ -33,19 +36,16 @@ const ProfileScreen = () => {
   const submitHandler = async (e) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error('Mật khẩu không trùng khớp');
     } else {
       try {
         const res = await updateProfile({
-          // NOTE: here we don't need the _id in the request payload as this is
-          // not used in our controller.
-          // _id: userInfo._id,
           name,
           email,
           password,
         }).unwrap();
         dispatch(setCredentials({ ...res }));
-        toast.success('Profile updated successfully');
+        toast.success('Hồ sơ đã được cập nhật thành công');
       } catch (err) {
         toast.error(err?.data?.message || err.error);
       }
@@ -55,57 +55,57 @@ const ProfileScreen = () => {
   return (
     <Row>
       <Col md={3}>
-        <h2>User Profile</h2>
+        <h2>{vi.userProfile}</h2>
 
         <Form onSubmit={submitHandler}>
           <Form.Group className='my-2' controlId='name'>
-            <Form.Label>Name</Form.Label>
+            <Form.Label>{vi.name}</Form.Label>
             <Form.Control
               type='text'
-              placeholder='Enter name'
+              placeholder={vi.enterName}
               value={name}
               onChange={(e) => setName(e.target.value)}
             ></Form.Control>
           </Form.Group>
 
           <Form.Group className='my-2' controlId='email'>
-            <Form.Label>Email Address</Form.Label>
+            <Form.Label>{vi.emailAddress}</Form.Label>
             <Form.Control
               type='email'
-              placeholder='Enter email'
+              placeholder={vi.enterEmail}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             ></Form.Control>
           </Form.Group>
 
           <Form.Group className='my-2' controlId='password'>
-            <Form.Label>Password</Form.Label>
+            <Form.Label>{vi.password}</Form.Label>
             <Form.Control
               type='password'
-              placeholder='Enter password'
+              placeholder={vi.enterPassword}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             ></Form.Control>
           </Form.Group>
 
           <Form.Group className='my-2' controlId='confirmPassword'>
-            <Form.Label>Confirm Password</Form.Label>
+            <Form.Label>{vi.confirmPassword}</Form.Label>
             <Form.Control
               type='password'
-              placeholder='Confirm password'
+              placeholder={vi.confirmPassword}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             ></Form.Control>
           </Form.Group>
 
           <Button type='submit' variant='primary'>
-            Update
+            {vi.update}
           </Button>
           {loadingUpdateProfile && <Loader />}
         </Form>
       </Col>
       <Col md={9}>
-        <h2>My Orders</h2>
+        <h2>{vi.myOrders}</h2>
         {isLoading ? (
           <Loader />
         ) : error ? (
@@ -116,11 +116,11 @@ const ProfileScreen = () => {
           <Table striped hover responsive className='table-sm'>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>DATE</th>
-                <th>TOTAL</th>
-                <th>PAID</th>
-                <th>DELIVERED</th>
+                <th>{vi.id}</th>
+                <th>{vi.date}</th>
+                <th>{vi.total}</th>
+                <th>{vi.paid}</th>
+                <th>{vi.delivered}</th>
                 <th></th>
               </tr>
             </thead>
@@ -129,7 +129,7 @@ const ProfileScreen = () => {
                 <tr key={order._id}>
                   <td>{order._id}</td>
                   <td>{order.createdAt.substring(0, 10)}</td>
-                  <td>{order.totalPrice}</td>
+                  <td>${order.totalPrice}</td>
                   <td>
                     {order.isPaid ? (
                       order.paidAt.substring(0, 10)
@@ -151,7 +151,7 @@ const ProfileScreen = () => {
                       className='btn-sm'
                       variant='light'
                     >
-                      Details
+                      {vi.details}
                     </Button>
                   </td>
                 </tr>

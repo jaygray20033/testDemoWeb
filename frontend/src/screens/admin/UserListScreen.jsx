@@ -1,4 +1,4 @@
-import React from 'react';
+'use client';
 import { Table, Button } from 'react-bootstrap';
 import { FaTrash, FaEdit, FaCheck, FaTimes } from 'react-icons/fa';
 import Message from '../../components/Message';
@@ -9,6 +9,7 @@ import {
 } from '../../slices/usersApiSlice';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
+import { vi } from '../../i18n/translations';
 
 const UserListScreen = () => {
   const { data: users, refetch, isLoading, error } = useGetUsersQuery();
@@ -16,7 +17,7 @@ const UserListScreen = () => {
   const [deleteUser] = useDeleteUserMutation();
 
   const deleteHandler = async (id) => {
-    if (window.confirm('Are you sure')) {
+    if (window.confirm(vi.deleteConfirm)) {
       try {
         await deleteUser(id);
         refetch();
@@ -28,7 +29,7 @@ const UserListScreen = () => {
 
   return (
     <>
-      <h1>Users</h1>
+      <h1>{vi.users}</h1>
       {isLoading ? (
         <Loader />
       ) : error ? (
@@ -39,10 +40,10 @@ const UserListScreen = () => {
         <Table striped bordered hover responsive className='table-sm'>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>NAME</th>
-              <th>EMAIL</th>
-              <th>ADMIN</th>
+              <th>{vi.id}</th>
+              <th>{vi.name}</th>
+              <th>{vi.email}</th>
+              <th>{vi.isAdmin}</th>
               <th></th>
             </tr>
           </thead>

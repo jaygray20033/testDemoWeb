@@ -4,13 +4,14 @@ import Message from '../../components/Message';
 import Loader from '../../components/Loader';
 import { useGetOrdersQuery } from '../../slices/ordersApiSlice';
 import { Link } from 'react-router-dom';
+import { vi } from '../../i18n/translations';
 
 const OrderListScreen = () => {
   const { data: orders, isLoading, error } = useGetOrdersQuery();
 
   return (
     <>
-      <h1>Orders</h1>
+      <h1>{vi.orders}</h1>
       {isLoading ? (
         <Loader />
       ) : error ? (
@@ -21,12 +22,12 @@ const OrderListScreen = () => {
         <Table striped bordered hover responsive className='table-sm'>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>USER</th>
-              <th>DATE</th>
-              <th>TOTAL</th>
-              <th>PAID</th>
-              <th>DELIVERED</th>
+              <th>{vi.id}</th>
+              <th>{vi.user}</th>
+              <th>{vi.date}</th>
+              <th>{vi.total}</th>
+              <th>{vi.isPaid}</th>
+              <th>{vi.isDelivered}</th>
               <th></th>
             </tr>
           </thead>
@@ -58,7 +59,7 @@ const OrderListScreen = () => {
                     variant='light'
                     className='btn-sm'
                   >
-                    Details
+                    {vi.details}
                   </Button>
                 </td>
               </tr>

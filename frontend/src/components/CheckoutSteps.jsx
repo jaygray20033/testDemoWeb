@@ -1,6 +1,6 @@
-import React from 'react';
 import { Nav } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
+import { vi } from '../i18n/translations';
 
 const CheckoutSteps = ({ step1, step2, step3, step4 }) => {
   return (
@@ -8,40 +8,40 @@ const CheckoutSteps = ({ step1, step2, step3, step4 }) => {
       <Nav.Item>
         {step1 ? (
           <Nav.Link as={Link} to='/login'>
-            Sign In
+            {vi.login}
           </Nav.Link>
         ) : (
-          <Nav.Link disabled>Sign In</Nav.Link>
+          <Nav.Link disabled>{vi.login}</Nav.Link>
         )}
       </Nav.Item>
 
       <Nav.Item>
         {step2 ? (
           <Nav.Link as={Link} to='/shipping'>
-            Shipping
+            {vi.shipping}
           </Nav.Link>
         ) : (
-          <Nav.Link disabled>Shipping</Nav.Link>
+          <Nav.Link disabled>{vi.shipping}</Nav.Link>
         )}
       </Nav.Item>
 
       <Nav.Item>
         {step3 ? (
           <Nav.Link as={Link} to='/payment'>
-            Payment
+            {vi.payment}
           </Nav.Link>
         ) : (
-          <Nav.Link disabled>Payment</Nav.Link>
+          <Nav.Link disabled>{vi.payment}</Nav.Link>
         )}
       </Nav.Item>
 
       <Nav.Item>
         {step4 ? (
           <Nav.Link as={Link} to='/placeorder'>
-            Place Order
+            {vi.placeOrder}
           </Nav.Link>
         ) : (
-          <Nav.Link disabled>Place Order</Nav.Link>
+          <Nav.Link disabled>{vi.placeOrder}</Nav.Link>
         )}
       </Nav.Item>
     </Nav>

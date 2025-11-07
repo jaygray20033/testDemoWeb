@@ -1,3 +1,5 @@
+'use client';
+
 import { Navbar, Nav, Container, NavDropdown, Badge } from 'react-bootstrap';
 import { FaShoppingCart, FaUser } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
@@ -7,6 +9,7 @@ import { logout } from '../slices/authSlice';
 import SearchBox from './SearchBox';
 import logo from '../assets/logo.png';
 import { resetCart } from '../slices/cartSlice';
+import { vi } from '../i18n/translations';
 
 const Header = () => {
   const { cartItems } = useSelector((state) => state.cart);
@@ -21,8 +24,6 @@ const Header = () => {
     try {
       await logoutApiCall().unwrap();
       dispatch(logout());
-      // NOTE: here we need to reset cart state for when a user logs out so the next
-      // user doesn't inherit the previous users cart and shipping
       dispatch(resetCart());
       navigate('/login');
     } catch (err) {
@@ -35,7 +36,7 @@ const Header = () => {
       <Navbar bg='primary' variant='dark' expand='lg' collapseOnSelect>
         <Container>
           <Navbar.Brand as={Link} to='/'>
-            <img src={logo} alt='ProShop' />
+            <img src={logo || '/placeholder.svg'} alt='ProShop' />
             ProShop
           </Navbar.Brand>
           <Navbar.Toggle aria-controls='basic-navbar-nav' />
@@ -43,7 +44,7 @@ const Header = () => {
             <Nav className='ms-auto'>
               <SearchBox />
               <Nav.Link as={Link} to='/cart'>
-                <FaShoppingCart /> Cart
+                <FaShoppingCart /> {vi.cart}
                 {cartItems.length > 0 && (
                   <Badge pill bg='success' style={{ marginLeft: '5px' }}>
                     {cartItems.reduce((a, c) => a + c.qty, 0)}
@@ -54,30 +55,30 @@ const Header = () => {
                 <>
                   <NavDropdown title={userInfo.name} id='username'>
                     <NavDropdown.Item as={Link} to='/profile'>
-                      Profile
+                      {vi.profile}
                     </NavDropdown.Item>
                     <NavDropdown.Item onClick={logoutHandler}>
-                      Logout
+                      {vi.logout}
                     </NavDropdown.Item>
                   </NavDropdown>
                 </>
               ) : (
                 <Nav.Link as={Link} to='/login'>
-                  <FaUser /> Sign In
+                  <FaUser /> {vi.signin}
                 </Nav.Link>
               )}
 
               {/* Admin Links */}
               {userInfo && userInfo.isAdmin && (
-                <NavDropdown title='Admin' id='adminmenu'>
+                <NavDropdown title={vi.admin} id='adminmenu'>
                   <NavDropdown.Item as={Link} to='/admin/productlist'>
-                    Products
+                    {vi.products}
                   </NavDropdown.Item>
                   <NavDropdown.Item as={Link} to='/admin/orderlist'>
-                    Orders
+                    {vi.orders}
                   </NavDropdown.Item>
                   <NavDropdown.Item as={Link} to='/admin/userlist'>
-                    Users
+                    {vi.users}
                   </NavDropdown.Item>
                 </NavDropdown>
               )}
