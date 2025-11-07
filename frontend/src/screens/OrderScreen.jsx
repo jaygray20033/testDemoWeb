@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import Message from '../components/Message';
 import Loader from '../components/Loader';
+import { formatPrice } from '../utils/formatPrice';
 import {
   useDeliverOrderMutation,
   useGetOrderDetailsQuery,
@@ -152,7 +153,8 @@ const OrderScreen = () => {
                           </Link>
                         </Col>
                         <Col md={4}>
-                          {item.qty} x ${item.price} = ${item.qty * item.price}
+                          {item.qty} x {formatPrice(item.price)} ={' '}
+                          {formatPrice(item.qty * item.price)}
                         </Col>
                       </Row>
                     </ListGroup.Item>
@@ -171,25 +173,25 @@ const OrderScreen = () => {
               <ListGroup.Item>
                 <Row>
                   <Col>{vi.items}</Col>
-                  <Col>${order.itemsPrice}</Col>
+                  <Col>{formatPrice(order.itemsPrice)}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Row>
                   <Col>{vi.shipping}</Col>
-                  <Col>${order.shippingPrice}</Col>
+                  <Col>{formatPrice(order.shippingPrice)}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Row>
                   <Col>{vi.tax}</Col>
-                  <Col>${order.taxPrice}</Col>
+                  <Col>{formatPrice(order.taxPrice)}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Row>
                   <Col>{vi.total}</Col>
-                  <Col>${order.totalPrice}</Col>
+                  <Col>{formatPrice(order.totalPrice)}</Col>
                 </Row>
               </ListGroup.Item>
               {!order.isPaid && (

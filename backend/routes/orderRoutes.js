@@ -7,7 +7,7 @@ import {
   getOrderById,
   updateOrderToPaid,
   createVNPayPayment,
-  vnpayReturn, // ← THÊM
+  vnpayReturn,
   updateOrderToDelivered,
   getOrders,
 } from '../controllers/orderController.js';
@@ -19,8 +19,6 @@ router.route('/:id').get(protect, getOrderById);
 router.route('/:id/pay').put(protect, updateOrderToPaid);
 router.route('/:id/vnpay').post(protect, createVNPayPayment);
 router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);
-
-// THÊM DÒNG NÀY
-router.get('/vnpay/return', vnpayReturn);
+router.get('/vnpay/return', vnpayReturn); // QUAN TRỌNG
 
 export default router;

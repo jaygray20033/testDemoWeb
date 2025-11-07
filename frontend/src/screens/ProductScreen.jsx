@@ -24,6 +24,7 @@ import Message from '../components/Message';
 import Meta from '../components/Meta';
 import { addToCart } from '../slices/cartSlice';
 import { vi } from '../i18n/translations';
+import { formatPrice } from '../utils/formatPrice';
 
 const ProductScreen = () => {
   const { id: productId } = useParams();
@@ -102,7 +103,7 @@ const ProductScreen = () => {
                   />
                 </ListGroup.Item>
                 <ListGroup.Item>
-                  {vi.price}: ${product.price}
+                  {vi.price}: {formatPrice(product.price)}
                 </ListGroup.Item>
                 <ListGroup.Item>
                   {vi.description}: {product.description}
@@ -116,7 +117,7 @@ const ProductScreen = () => {
                     <Row>
                       <Col>{vi.price}:</Col>
                       <Col>
-                        <strong>${product.price}</strong>
+                        <strong>{formatPrice(product.price)}</strong>
                       </Col>
                     </Row>
                   </ListGroup.Item>

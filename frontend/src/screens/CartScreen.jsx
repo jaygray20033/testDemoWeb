@@ -15,6 +15,7 @@ import { FaTrash } from 'react-icons/fa';
 import Message from '../components/Message';
 import { addToCart, removeFromCart } from '../slices/cartSlice';
 import { vi } from '../i18n/translations';
+import { formatPrice } from '../utils/formatPrice';
 
 const CartScreen = () => {
   const navigate = useNavigate();
@@ -61,7 +62,7 @@ const CartScreen = () => {
                   <Col md={3}>
                     <Link to={`/product/${item._id}`}>{item.name}</Link>
                   </Col>
-                  <Col md={2}>${item.price}</Col>
+                  <Col md={2}>{formatPrice(item.price)}</Col>
                   <Col md={2}>
                     <Form.Control
                       as='select'
@@ -100,10 +101,9 @@ const CartScreen = () => {
                 {vi.subtotal} (
                 {cartItems.reduce((acc, item) => acc + item.qty, 0)}) {vi.items}
               </h2>
-              $
-              {cartItems
-                .reduce((acc, item) => acc + item.qty * item.price, 0)
-                .toFixed(2)}
+              {formatPrice(
+                cartItems.reduce((acc, item) => acc + item.qty * item.price, 0)
+              )}
             </ListGroup.Item>
             <ListGroup.Item>
               <Button

@@ -11,6 +11,7 @@ import Loader from '../components/Loader';
 import { useCreateOrderMutation } from '../slices/ordersApiSlice';
 import { clearCartItems } from '../slices/cartSlice';
 import { vi } from '../i18n/translations';
+import { formatPrice } from '../utils/formatPrice';
 
 const PlaceOrderScreen = () => {
   const navigate = useNavigate();
@@ -91,8 +92,8 @@ const PlaceOrderScreen = () => {
                           </Link>
                         </Col>
                         <Col md={4}>
-                          {item.qty} x ${item.price} = $
-                          {(item.qty * (item.price * 100)) / 100}
+                          {item.qty} x {formatPrice(item.price)} ={' '}
+                          {formatPrice(item.qty * item.price)}
                         </Col>
                       </Row>
                     </ListGroup.Item>
@@ -111,25 +112,25 @@ const PlaceOrderScreen = () => {
               <ListGroup.Item>
                 <Row>
                   <Col>{vi.items}</Col>
-                  <Col>${cart.itemsPrice}</Col>
+                  <Col>{formatPrice(cart.itemsPrice)}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Row>
                   <Col>{vi.shipping}</Col>
-                  <Col>${cart.shippingPrice}</Col>
+                  <Col>{formatPrice(cart.shippingPrice)}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Row>
                   <Col>{vi.tax}</Col>
-                  <Col>${cart.taxPrice}</Col>
+                  <Col>{formatPrice(cart.taxPrice)}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>
                 <Row>
                   <Col>{vi.total}</Col>
-                  <Col>${cart.totalPrice}</Col>
+                  <Col>{formatPrice(cart.totalPrice)}</Col>
                 </Row>
               </ListGroup.Item>
               <ListGroup.Item>

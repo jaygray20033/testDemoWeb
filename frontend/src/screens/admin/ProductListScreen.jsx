@@ -13,6 +13,7 @@ import {
 } from '../../slices/productsApiSlice';
 import { toast } from 'react-toastify';
 import { vi } from '../../i18n/translations';
+import { formatPrice } from '../../utils/formatPrice';
 
 const ProductListScreen = () => {
   const { pageNumber } = useParams();
@@ -88,7 +89,7 @@ const ProductListScreen = () => {
                 <tr key={product._id}>
                   <td>{product._id}</td>
                   <td>{product.name}</td>
-                  <td>${product.price}</td>
+                  <td>{formatPrice(product.price)}</td>
                   <td>{product.category}</td>
                   <td>{product.brand}</td>
                   <td>

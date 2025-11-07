@@ -5,6 +5,7 @@ import Loader from '../../components/Loader';
 import { useGetOrdersQuery } from '../../slices/ordersApiSlice';
 import { Link } from 'react-router-dom';
 import { vi } from '../../i18n/translations';
+import { formatPrice } from '../../utils/formatPrice';
 
 const OrderListScreen = () => {
   const { data: orders, isLoading, error } = useGetOrdersQuery();
@@ -37,7 +38,7 @@ const OrderListScreen = () => {
                 <td>{order._id}</td>
                 <td>{order.user && order.user.name}</td>
                 <td>{order.createdAt.substring(0, 10)}</td>
-                <td>${order.totalPrice}</td>
+                <td>{formatPrice(order.totalPrice)}</td>
                 <td>
                   {order.isPaid ? (
                     order.paidAt.substring(0, 10)
