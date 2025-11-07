@@ -1,0 +1,148 @@
+const products = [
+  {
+    name: 'Tai Nghe Không Dây Bluetooth Airpods',
+    image: '/images/airpods.jpg',
+    description:
+      'Công nghệ Bluetooth cho phép kết nối với các thiết bị tương thích một cách không dây. Âm thanh AAC chất lượng cao mang lại trải nghiệm nghe nhạc sôi động. Microphone tích hợp cho phép bạn nghe gọi trong khi làm việc',
+    brand: 'Apple',
+    category: 'Điện Tử',
+    price: 89.99,
+    countInStock: 10,
+    rating: 4.5,
+    numReviews: 12,
+  },
+  {
+    name: 'iPhone 13 Pro 256GB',
+    image: '/images/phone.jpg',
+    description:
+      'Giới thiệu iPhone 13 Pro. Một hệ thống camera ba chiều biến đổi mang lại hàng tấn khả năng mà không cần phức tạp. Một bước tiến vượt bậc trong thời lượng pin',
+    brand: 'Apple',
+    category: 'Điện Tử',
+    price: 599.99,
+    countInStock: 7,
+    rating: 4.0,
+    numReviews: 8,
+  },
+  {
+    name: 'Máy Ảnh DSLR Canon EOS 80D',
+    image: '/images/camera.jpg',
+    description:
+      'Được đặc trưng bởi các thông số hình ảnh linh hoạt, Canon EOS 80D càng làm rõ hơn bằng cách sử dụng hai hệ thống lấy nét mạnh mẽ và thiết kế trực quan',
+    brand: 'Canon',
+    category: 'Điện Tử',
+    price: 929.99,
+    countInStock: 5,
+    rating: 3,
+    numReviews: 12,
+  },
+  {
+    name: 'Máy Chơi Game Sony Playstation 5',
+    image: '/images/playstation.jpg',
+    description:
+      'Trung tâm giải trí gia đình tối cao bắt đầu với PlayStation. Cho dù bạn yêu thích chơi game, phim HD, truyền hình hay âm nhạc',
+    brand: 'Sony',
+    category: 'Điện Tử',
+    price: 399.99,
+    countInStock: 11,
+    rating: 5,
+    numReviews: 12,
+  },
+  {
+    name: 'Chuột Gaming Logitech G-Series',
+    image: '/images/mouse.jpg',
+    description:
+      'Kiểm soát tốt hơn trò chơi của bạn với chuột gaming Logitech LIGHTSYNC này. Sáu nút lập trình cho phép tùy chỉnh để trải nghiệm chơi game mượt mà',
+    brand: 'Logitech',
+    category: 'Điện Tử',
+    price: 49.99,
+    countInStock: 7,
+    rating: 3.5,
+    numReviews: 10,
+  },
+  {
+    name: 'Loa Thông Minh Amazon Echo Dot',
+    image: '/images/alexa.jpg',
+    description:
+      'Gặp Echo Dot - Loa thông minh phổ biến nhất của chúng tôi với thiết kế vải. Đây là loa thông minh nhỏ gọn nhất của chúng tôi phù hợp hoàn hảo vào không gian nhỏ',
+    brand: 'Amazon',
+    category: 'Điện Tử',
+    price: 29.99,
+    countInStock: 0,
+    rating: 4,
+    numReviews: 12,
+  },
+  {
+    name: 'Laptop Dell XPS 13 FHD',
+    image: '/images/sample.jpg',
+    description:
+      'Laptop siêu mỏng với màn hình Full HD 13 inch, bộ xử lý Intel Core i5 thế hệ mới nhất. Hiệu năng mạnh mẽ với pin kéo dài cả ngày',
+    brand: 'Dell',
+    category: 'Điện Tử',
+    price: 799.99,
+    countInStock: 6,
+    rating: 4.5,
+    numReviews: 15,
+  },
+  {
+    name: 'Bàn Phím Cơ RGB Corsair K95',
+    image: '/images/sample.jpg',
+    description:
+      'Bàn phím cơ chuyên nghiệp với đèn RGB có thể tùy chỉnh. Các nút lệnh siêu nhanh và độ bền cao với công tắc Cherry MX',
+    brand: 'Corsair',
+    category: 'Điện Tử',
+    price: 199.99,
+    countInStock: 8,
+    rating: 4.5,
+    numReviews: 22,
+  },
+  {
+    name: 'Màn Hình Gaming LG 27 inch 144Hz',
+    image: '/images/screens.png',
+    description:
+      'Màn hình gaming 27 inch với tần số quét 144Hz, độ phản ứng 1ms. Công nghệ IPS cho góc nhìn rộng và màu sắc chính xác',
+    brand: 'LG',
+    category: 'Điện Tử',
+    price: 399.99,
+    countInStock: 4,
+    rating: 4.8,
+    numReviews: 18,
+  },
+  {
+    name: 'Tai Nghe Over-Ear Bose QuietComfort 45',
+    image: '/images/sample.jpg',
+    description:
+      'Tai nghe chống ồn tuyệt vời với công nghệ Bose đã được chứng minh. Âm thanh vàng mướt, pin 24 giờ và sự thoải mái suốt ngày',
+    brand: 'Bose',
+    category: 'Điện Tử',
+    price: 379.99,
+    countInStock: 5,
+    rating: 4.7,
+    numReviews: 25,
+  },
+  {
+    name: 'Smartwatch Apple Watch Series 7',
+    image: '/images/sample.jpg',
+    description:
+      'Đồng hồ thông minh hàng đầu với màn hình LTPO Retina luôn bật. Theo dõi sức khỏe, thể dục và đơn giản hóa các tác vụ hàng ngày',
+    brand: 'Apple',
+    category: 'Điện Tử',
+    price: 399.99,
+    countInStock: 12,
+    rating: 4.6,
+    numReviews: 30,
+  },
+  {
+    name: 'SSD Samsung 970 EVO Plus 1TB',
+    image: '/images/sample.jpg',
+    description:
+      'Ổ SSD nhanh siêu tốc với tốc độ đọc lên đến 4.8Gbps. Lưu trữ dung lượng lớn với độ tin cậy cao và bảo hành 5 năm',
+    brand: 'Samsung',
+    category: 'Điện Tử',
+    price: 129.99,
+    countInStock: 15,
+    rating: 4.8,
+    numReviews: 40,
+  },
+];
+
+export default products;
