@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Row, Col, ListGroup, Image, Card, Button } from 'react-bootstrap';
 import { useSelector } from 'react-redux';
@@ -38,6 +38,10 @@ const OrderScreen = () => {
     isLoading: loadingVNPayConfig,
     error: errorVNPayConfig,
   } = useGetVNPayConfigQuery();
+
+  useEffect(() => {
+    setIsProcessingVNPay(false);
+  }, [orderId]);
 
   const handleVNPayPayment = async () => {
     if (!order || order.isPaid) {

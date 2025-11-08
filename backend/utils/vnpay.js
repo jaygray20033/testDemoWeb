@@ -1,9 +1,14 @@
-import querystring from 'qs';
 import crypto from 'crypto';
 import dateFormat from 'dateformat';
 
-const USD_TO_VND_RATE = 30000; // 1 USD = 30,000 VND
+// Constants
+const USD_TO_VND_RATE = 24000; // Updated rate for better accuracy
+const VNPAY_TIMEOUT = 15; // minutes
+const VNPAY_VERSION = '2.1.0';
 
+/**
+ * Sort object keys and remove null/empty values
+ */
 function sortObject(obj) {
   const sorted = {};
   const keys = Object.keys(obj).sort();
@@ -15,117 +20,190 @@ function sortObject(obj) {
   return sorted;
 }
 
+/**
+ * Calculate HMAC SHA512 checksum
+ */
+function calculateChecksum(signData, hashSecret) {
+  const hmac = crypto.createHmac('sha512', hashSecret);
+  return hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+}
+
+/**
+ * Create VNPAY payment URL
+ */
 export const createVNPayPaymentURL = (
   req,
   amount,
   orderId,
-  orderInfo = 'Thanh toan don hang ProShop'
+  orderInfo = 'Thanh toan don hang'
 ) => {
-  // Convert USD to VND: amount is in USD, multiply by rate to get VND
+  // Validate inputs
+  if (!amount || amount <= 0) {
+    throw new Error('Số tiền không hợp lệ');
+  }
+  if (!orderId) {
+    throw new Error('ID đơn hàng không hợp lệ');
+  }
+  if (
+    !process.env.VNPAY_TMN_CODE ||
+    !process.env.VNPAY_HASH_SECRET ||
+    !process.env.VNPAY_API_URL
+  ) {
+    throw new Error('VNPAY environment variables not configured');
+  }
+
   const amountInVND = Math.round(Number.parseFloat(amount) * USD_TO_VND_RATE);
 
-  // VNPay expects amount in cents (multiply by 100), must be integer
-  const vnpAmount = Math.floor(amountInVND * 100);
+  // Get IP address
+  let ipAddr = req.headers['x-forwarded-for'];
+  if (ipAddr) {
+    ipAddr = ipAddr.split(',')[0].trim();
+  } else {
+    ipAddr =
+      req.socket?.remoteAddress || req.connection?.remoteAddress || '127.0.0.1';
+  }
 
-  console.log(
-    '[v0] Payment URL - USD Amount:',
-    amount,
-    '-> VND:',
-    amountInVND,
-    '-> VNPay format:',
-    vnpAmount
+  // Clean IP (handle IPv6)
+  if (ipAddr.includes('::ffff:')) {
+    ipAddr = ipAddr.replace('::ffff:', '');
+  }
+  if (ipAddr === '::1') {
+    ipAddr = '127.0.0.1';
+  }
+
+  const now = new Date();
+  const createDate = dateFormat(now, 'yyyymmddHHmmss');
+  // Set expiry to 15 minutes from now
+  const expireDate = dateFormat(
+    new Date(now.getTime() + VNPAY_TIMEOUT * 60 * 1000),
+    'yyyymmddHHmmss'
   );
 
-  const createDate = dateFormat(new Date(), 'yyyymmddHHmmss');
-
+  // Build parameters in exact VNPAY order
   let vnp_Params = {
-    vnp_Version: '2.1.0',
+    vnp_Version: VNPAY_VERSION,
     vnp_Command: 'pay',
     vnp_TmnCode: process.env.VNPAY_TMN_CODE,
-    vnp_Amount: vnpAmount, // Must be integer (cents)
-    vnp_CreateDate: createDate, // Exact format: yyyymmddHHmmss
-    vnp_CurrCode: 'VND',
-    vnp_IpAddr:
-      req.headers['x-forwarded-for']?.split(',')[0] ||
-      req.connection.remoteAddress ||
-      req.socket.remoteAddress ||
-      '127.0.0.1',
     vnp_Locale: 'vn',
-    vnp_OrderInfo: encodeURIComponent(orderInfo), // Properly encode special characters
-    vnp_OrderType: 'other',
-    vnp_ReturnUrl: process.env.VNPAY_RETURN_URL,
+    vnp_CurrCode: 'VND',
     vnp_TxnRef: orderId.toString(),
+    vnp_OrderInfo: `${orderInfo}`,
+    vnp_OrderType: 'billpayment',
+    vnp_Amount: amountInVND.toString(), // Use amountInVND directly without x100
+    vnp_ReturnUrl: process.env.VNPAY_RETURN_URL,
+    vnp_IpAddr: ipAddr,
+    vnp_CreateDate: createDate,
+    vnp_ExpireDate: expireDate,
   };
 
+  // Sort parameters
   vnp_Params = sortObject(vnp_Params);
 
-  const signData = querystring.stringify(vnp_Params, { encode: false });
-  console.log('[v0] Sign data:', signData);
+  // Create sign string
+  const signData = new URLSearchParams(vnp_Params).toString();
 
-  const hmac = crypto.createHmac('sha512', process.env.VNPAY_HASH_SECRET);
-  const vnp_SecureHash = hmac
-    .update(Buffer.from(signData, 'utf-8'))
-    .digest('hex');
+  // Calculate checksum
+  const vnp_SecureHash = calculateChecksum(
+    signData,
+    process.env.VNPAY_HASH_SECRET
+  );
 
+  // Add checksum to params
   vnp_Params.vnp_SecureHash = vnp_SecureHash;
 
-  const paymentUrl = `${process.env.VNPAY_API_URL}?${querystring.stringify(
-    vnp_Params,
-    {
-      encode: false,
-    }
-  )}`;
+  // Build final URL
+  const paymentUrl = `${process.env.VNPAY_API_URL}?${new URLSearchParams(
+    vnp_Params
+  ).toString()}`;
 
-  console.log('[v0] Final VNPay URL generated successfully');
+  console.log('[v0] VNPAY Payment URL generated:');
+  console.log('[v0] Order ID:', orderId);
+  console.log('[v0] Amount USD:', amount, '=> VND:', amountInVND);
+  console.log('[v0] IP Address:', ipAddr);
+  console.log('[v0] Create Date:', createDate);
+  console.log('[v0] Expire Date:', expireDate);
+  console.log('[v0] Sign data:', signData);
+  console.log('[v0] Checksum:', vnp_SecureHash);
+
   return paymentUrl;
 };
 
+/**
+ * Verify VNPAY response
+ */
 export const verifyVNPayResponse = (query) => {
-  console.log('[v0] Verify response - All params:', query);
+  try {
+    if (!process.env.VNPAY_HASH_SECRET) {
+      throw new Error('VNPAY_HASH_SECRET not configured');
+    }
 
-  let vnp_Params = { ...query };
-  const secureHash = vnp_Params.vnp_SecureHash;
+    let vnp_Params = { ...query };
+    const secureHash = vnp_Params.vnp_SecureHash;
 
-  delete vnp_Params.vnp_SecureHash;
-  delete vnp_Params.vnp_SecureHashType;
+    // Remove secure hash from params before signing
+    delete vnp_Params.vnp_SecureHash;
+    delete vnp_Params.vnp_SecureHashType;
 
-  vnp_Params = sortObject(vnp_Params);
-  const signData = querystring.stringify(vnp_Params, { encode: false });
+    // Sort and create sign string
+    vnp_Params = sortObject(vnp_Params);
+    const signData = new URLSearchParams(vnp_Params).toString();
 
-  console.log('[v0] Verify sign data:', signData);
+    // Calculate checksum
+    const checkSign = calculateChecksum(
+      signData,
+      process.env.VNPAY_HASH_SECRET
+    );
 
-  const hmac = crypto.createHmac('sha512', process.env.VNPAY_HASH_SECRET);
-  const checkSign = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
+    // Compare checksums
+    const isValid = secureHash === checkSign;
 
-  console.log('[v0] Expected hash:', secureHash);
-  console.log('[v0] Calculated hash:', checkSign);
-  console.log('[v0] Hash match:', secureHash === checkSign);
+    // Parse amount
+    const amountInCents = vnp_Params.vnp_Amount
+      ? Number.parseInt(vnp_Params.vnp_Amount)
+      : 0;
+    const amountInVND = amountInCents / 100;
+    const amountInUSD = amountInVND / USD_TO_VND_RATE;
 
-  const amountInCents = vnp_Params.vnp_Amount
-    ? Number(vnp_Params.vnp_Amount)
-    : 0;
-  const amountInVND = amountInCents / 100;
-  const amountInUSD = amountInVND / USD_TO_VND_RATE;
+    const responseCode = vnp_Params.vnp_ResponseCode || '99';
+    const isSuccess = isValid && responseCode === '00';
 
-  console.log(
-    '[v0] Amount conversion - Cents:',
-    amountInCents,
-    '-> VND:',
-    amountInVND,
-    '-> USD:',
-    amountInUSD
-  );
+    console.log('[v0] VNPAY Response Verification:');
+    console.log('[v0] Valid Signature:', isValid);
+    console.log('[v0] Response Code:', responseCode);
+    console.log('[v0] Transaction No:', vnp_Params.vnp_TransactionNo);
+    console.log('[v0] Amount VND:', amountInVND, '=> USD:', amountInUSD);
+    console.log('[v0] Success:', isSuccess);
 
-  return {
-    isValid: secureHash === checkSign,
-    isSuccess: secureHash === checkSign && vnp_Params.vnp_ResponseCode === '00',
-    responseCode: vnp_Params.vnp_ResponseCode || '99',
-    amount: Number.parseFloat(amountInUSD.toFixed(2)), // Return USD amount for comparison
-    transactionNo: vnp_Params.vnp_TransactionNo,
-  };
+    return {
+      isValid: isValid,
+      isSuccess: isSuccess,
+      responseCode: responseCode,
+      amount: Number.parseFloat(amountInUSD.toFixed(2)),
+      transactionNo: vnp_Params.vnp_TransactionNo,
+      orderId: vnp_Params.vnp_TxnRef,
+      payDate: vnp_Params.vnp_PayDate,
+    };
+  } catch (error) {
+    console.error('[v0] Error verifying VNPAY response:', error.message);
+    return {
+      isValid: false,
+      isSuccess: false,
+      responseCode: '99',
+      amount: 0,
+      transactionNo: null,
+      orderId: null,
+      payDate: null,
+    };
+  }
 };
 
+/**
+ * Check if transaction is new (not processed before)
+ */
 export const checkIfNewVNPayTransaction = async (orderModel, transactionNo) => {
+  if (!transactionNo) {
+    return true;
+  }
   const existing = await orderModel.findOne({
     'paymentResult.transactionNo': transactionNo,
   });

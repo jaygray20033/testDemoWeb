@@ -15,10 +15,12 @@ import { protect, admin } from '../middleware/authMiddleware.js';
 
 router.route('/').post(protect, addOrderItems).get(protect, admin, getOrders);
 router.route('/mine').get(protect, getMyOrders);
+
+router.get('/vnpay/return', vnpayReturn);
+
 router.route('/:id').get(protect, getOrderById);
 router.route('/:id/pay').put(protect, updateOrderToPaid);
 router.route('/:id/vnpay').post(protect, createVNPayPayment);
 router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);
-router.get('/vnpay/return', vnpayReturn); // QUAN TRỌNG
 
 export default router;

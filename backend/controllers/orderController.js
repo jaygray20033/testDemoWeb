@@ -61,37 +61,29 @@ const getOrderById = asyncHandler(async (req, res) => {
 
 const updateOrderToPaid = asyncHandler(async (req, res) => {
   const verification = verifyVNPayResponse(req.body);
-  console.log('[v0] Payment verification result:', {
-    isValid: verification.isValid,
-    isSuccess: verification.isSuccess,
-    amount: verification.amount,
-  });
 
   if (!verification.isValid) {
-    console.log('[v0] Payment signature invalid');
+    console.log('[v0] Invalid payment signature');
     res.status(400);
-    throw new Error('Thanh toán VNPAY không hợp lệ - chữ ký sai');
+    throw new Error('Thanh toán không hợp lệ - chữ ký sai');
   }
 
   if (!verification.isSuccess) {
-    console.log(
-      '[v0] Payment not successful - response code:',
-      verification.responseCode
-    );
+    console.log('[v0] Payment failed with code:', verification.responseCode);
     res.status(400);
     throw new Error(
-      `Thanh toán VNPAY không thành công - mã lỗi: ${verification.responseCode}`
+      `Thanh toán không thành công - mã lỗi: ${verification.responseCode}`
     );
   }
 
   const isNew = await checkIfNewVNPayTransaction(
     Order,
-    req.body.vnp_TransactionNo
+    verification.transactionNo
   );
   if (!isNew) {
     console.log('[v0] Transaction already processed');
     res.status(400);
-    throw new Error('Giao dịch đã được xử lý trước đó');
+    throw new Error('Giao dịch đã được xử lý');
   }
 
   const order = await Order.findById(req.params.id);
@@ -101,35 +93,35 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
   }
 
   const paidAmount = verification.amount;
-  const tolerance = 0.5;
+  const tolerance = 1; // $1 tolerance
   const amountDifference = Math.abs(
     paidAmount - Number.parseFloat(order.totalPrice)
   );
 
   console.log(
-    '[v0] Amount comparison - Expected:',
+    '[v0] Amount check - Expected:',
     order.totalPrice,
     'Received:',
     paidAmount,
-    'Difference:',
+    'Diff:',
     amountDifference
   );
 
   if (amountDifference > tolerance) {
     res.status(400);
     throw new Error(
-      `Số tiền không khớp: mong đợi ${order.totalPrice}$ nhưng nhận ${paidAmount}$`
+      `Số tiền không khớp: ${order.totalPrice}$ vs ${paidAmount}$`
     );
   }
 
   order.isPaid = true;
   order.paidAt = new Date();
   order.paymentResult = {
-    id: req.body.vnp_TxnRef,
+    id: verification.orderId,
     status: 'COMPLETED',
-    update_time: req.body.vnp_PayDate,
+    update_time: verification.payDate,
     email_address: 'vnpay@vnpay.vn',
-    transactionNo: req.body.vnp_TransactionNo,
+    transactionNo: verification.transactionNo,
   };
 
   const updatedOrder = await order.save();
@@ -148,6 +140,18 @@ const createVNPayPayment = asyncHandler(async (req, res) => {
     throw new Error('Đơn hàng đã thanh toán');
   }
 
+  const now = new Date();
+  const createdTime = new Date(order.createdAt);
+  const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60 * 1000);
+
+  // If order is older than 15 minutes and not paid, it's a timeout - allow new attempt
+  if (createdTime < fifteenMinutesAgo && !order.isPaid) {
+    console.log(
+      '[v0] Previous payment attempt expired, allowing retry for order:',
+      req.params.id
+    );
+  }
+
   try {
     const paymentUrl = createVNPayPaymentURL(
       req,
@@ -156,49 +160,45 @@ const createVNPayPayment = asyncHandler(async (req, res) => {
       `Thanh toan don hang #${order._id}`
     );
 
-    console.log('[v0] VNPay payment URL created for order:', order._id);
-    return res.json({ paymentUrl });
+    res.json({ paymentUrl });
   } catch (error) {
-    console.log('[v0] Error creating VNPay payment URL:', error.message);
     res.status(500);
     throw new Error('Lỗi tạo URL thanh toán VNPay: ' + error.message);
   }
 });
 
 const vnpayReturn = asyncHandler(async (req, res) => {
-  console.log('[v0] VNPay return request received:', req.query);
+  const query = req.query;
+  const result = verifyVNPayResponse(query);
 
-  const result = verifyVNPayResponse(req.query);
-
-  console.log('[v0] VNPay Return - Signature valid:', result.isValid);
-  console.log('[v0] VNPay Return - Response code:', result.responseCode);
-  console.log('[v0] VNPay Return - Order ID:', req.query.vnp_TxnRef);
+  const orderId = query.vnp_TxnRef;
+  const returnUrl = process.env.REACT_APP_API || 'http://localhost:3000';
 
   if (!result.isValid) {
-    console.log('[v0] Invalid VNPay signature');
+    console.log('[v0] Invalid signature in return');
     return res.send(`
       <html>
-        <head><title>Thanh toán</title></head>
+        <head><title>Thanh toán VNPAY</title><meta charset="utf-8"></head>
         <body>
           <script>
-            window.location.href = '${process.env.REACT_APP_API}/order/${req.query.vnp_TxnRef}?payment=fail&reason=invalid_signature';
+            window.location.href = '${returnUrl}/order/${orderId}?payment=fail&reason=invalid_signature';
           </script>
         </body>
       </html>
     `);
   }
 
-  if (result.responseCode === '00') {
+  if (result.isSuccess) {
     try {
-      const order = await Order.findById(req.query.vnp_TxnRef);
+      const order = await Order.findById(orderId);
       if (!order) {
-        console.log('[v0] Order not found:', req.query.vnp_TxnRef);
+        console.log('[v0] Order not found:', orderId);
         return res.send(`
           <html>
-            <head><title>Thanh toán</title></head>
+            <head><title>Thanh toán VNPAY</title><meta charset="utf-8"></head>
             <body>
               <script>
-                window.location.href = '${process.env.REACT_APP_API}?payment=fail&reason=order_not_found';
+                window.location.href = '${returnUrl}?payment=fail&reason=order_not_found';
               </script>
             </body>
           </html>
@@ -209,50 +209,47 @@ const vnpayReturn = asyncHandler(async (req, res) => {
         order.isPaid = true;
         order.paidAt = new Date();
         order.paymentResult = {
-          id: req.query.vnp_TxnRef,
-          transactionNo: req.query.vnp_TransactionNo,
+          id: orderId,
+          transactionNo: result.transactionNo,
           status: 'COMPLETED',
-          update_time: req.query.vnp_PayDate,
+          update_time: result.payDate,
           email_address: 'vnpay@vnpay.vn',
         };
         await order.save();
-        console.log('[v0] Order marked as paid:', req.query.vnp_TxnRef);
+        console.log('[v0] Order paid successfully:', orderId);
       }
 
       return res.send(`
         <html>
-          <head><title>Thanh toán</title></head>
+          <head><title>Thanh toán VNPAY</title><meta charset="utf-8"></head>
           <body>
             <script>
-              window.location.href = '${process.env.REACT_APP_API}/order/${req.query.vnp_TxnRef}?payment=success';
+              window.location.href = '${returnUrl}/order/${orderId}?payment=success';
             </script>
           </body>
         </html>
       `);
     } catch (error) {
-      console.log('[v0] Error updating order:', error.message);
+      console.error('[v0] Error processing payment:', error.message);
       return res.send(`
         <html>
-          <head><title>Thanh toán</title></head>
+          <head><title>Thanh toán VNPAY</title><meta charset="utf-8"></head>
           <body>
             <script>
-              window.location.href = '${process.env.REACT_APP_API}?payment=fail&reason=processing_error';
+              window.location.href = '${returnUrl}?payment=fail&reason=processing_error';
             </script>
           </body>
         </html>
       `);
     }
   } else {
-    console.log(
-      '[v0] VNPay payment failed. Response code:',
-      result.responseCode
-    );
+    console.log('[v0] Payment failed, response code:', result.responseCode);
     return res.send(`
       <html>
-        <head><title>Thanh toán</title></head>
+        <head><title>Thanh toán VNPAY</title><meta charset="utf-8"></head>
         <body>
           <script>
-            window.location.href = '${process.env.REACT_APP_API}/order/${req.query.vnp_TxnRef}?payment=fail&reason=vnpay_failed&code=${result.responseCode}';
+            window.location.href = '${returnUrl}/order/${orderId}?payment=fail&reason=vnpay_error&code=${result.responseCode}';
           </script>
         </body>
       </html>
