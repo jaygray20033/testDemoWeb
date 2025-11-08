@@ -1,10 +1,22 @@
 import crypto from 'crypto';
-import dateFormat from 'dateformat';
 
 // Constants
-const USD_TO_VND_RATE = 24000; // Updated rate for better accuracy
+const USD_TO_VND_RATE = 24000;
 const VNPAY_TIMEOUT = 15; // minutes
 const VNPAY_VERSION = '2.1.0';
+
+/**
+ * Format date to VNPAY format (yyyymmddHHmmss)
+ */
+function formatVNPayDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}${month}${day}${hours}${minutes}${seconds}`;
+}
 
 /**
  * Sort object keys and remove null/empty values
@@ -53,6 +65,7 @@ export const createVNPayPaymentURL = (
   }
 
   const amountInVND = Math.round(Number.parseFloat(amount) * USD_TO_VND_RATE);
+  const vnpayAmount = amountInVND * 100;
 
   // Get IP address
   let ipAddr = req.headers['x-forwarded-for'];
@@ -72,12 +85,9 @@ export const createVNPayPaymentURL = (
   }
 
   const now = new Date();
-  const createDate = dateFormat(now, 'yyyymmddHHmmss');
-  // Set expiry to 15 minutes from now
-  const expireDate = dateFormat(
-    new Date(now.getTime() + VNPAY_TIMEOUT * 60 * 1000),
-    'yyyymmddHHmmss'
-  );
+  const createDate = formatVNPayDate(now);
+  const expireTime = new Date(now.getTime() + VNPAY_TIMEOUT * 60 * 1000);
+  const expireDate = formatVNPayDate(expireTime);
 
   // Build parameters in exact VNPAY order
   let vnp_Params = {
@@ -89,7 +99,7 @@ export const createVNPayPaymentURL = (
     vnp_TxnRef: orderId.toString(),
     vnp_OrderInfo: `${orderInfo}`,
     vnp_OrderType: 'billpayment',
-    vnp_Amount: amountInVND.toString(), // Use amountInVND directly without x100
+    vnp_Amount: vnpayAmount.toString(), // Use vnpayAmount (x100)
     vnp_ReturnUrl: process.env.VNPAY_RETURN_URL,
     vnp_IpAddr: ipAddr,
     vnp_CreateDate: createDate,
@@ -118,10 +128,21 @@ export const createVNPayPaymentURL = (
 
   console.log('[v0] VNPAY Payment URL generated:');
   console.log('[v0] Order ID:', orderId);
-  console.log('[v0] Amount USD:', amount, '=> VND:', amountInVND);
+  console.log(
+    '[v0] Amount USD:',
+    amount,
+    '=> VND:',
+    amountInVND,
+    '=> x100:',
+    vnpayAmount
+  );
   console.log('[v0] IP Address:', ipAddr);
   console.log('[v0] Create Date:', createDate);
   console.log('[v0] Expire Date:', expireDate);
+  console.log(
+    '[v0] Expire Date calculated correctly:',
+    expireDate > createDate
+  );
   console.log('[v0] Sign data:', signData);
   console.log('[v0] Checksum:', vnp_SecureHash);
 
@@ -157,7 +178,6 @@ export const verifyVNPayResponse = (query) => {
     // Compare checksums
     const isValid = secureHash === checkSign;
 
-    // Parse amount
     const amountInCents = vnp_Params.vnp_Amount
       ? Number.parseInt(vnp_Params.vnp_Amount)
       : 0;
@@ -171,7 +191,14 @@ export const verifyVNPayResponse = (query) => {
     console.log('[v0] Valid Signature:', isValid);
     console.log('[v0] Response Code:', responseCode);
     console.log('[v0] Transaction No:', vnp_Params.vnp_TransactionNo);
-    console.log('[v0] Amount VND:', amountInVND, '=> USD:', amountInUSD);
+    console.log(
+      '[v0] Amount received x100:',
+      amountInCents,
+      '=> VND:',
+      amountInVND,
+      '=> USD:',
+      amountInUSD
+    );
     console.log('[v0] Success:', isSuccess);
 
     return {
