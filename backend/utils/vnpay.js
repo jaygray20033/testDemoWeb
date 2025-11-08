@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 // Constants
-const USD_TO_VND_RATE = 24000;
+const USD_TO_VND_RATE = 1; // No longer needed - all prices are already in VND
 const VNPAY_TIMEOUT = 15; // minutes
 const VNPAY_VERSION = '2.1.0';
 
@@ -64,8 +64,7 @@ export const createVNPayPaymentURL = (
     throw new Error('VNPAY environment variables not configured');
   }
 
-  const amountInVND = Math.round(Number.parseFloat(amount) * USD_TO_VND_RATE);
-  const vnpayAmount = amountInVND * 100;
+  const vnpayAmount = Math.round(amount * 100);
 
   // Get IP address
   let ipAddr = req.headers['x-forwarded-for'];
@@ -128,14 +127,7 @@ export const createVNPayPaymentURL = (
 
   console.log('[v0] VNPAY Payment URL generated:');
   console.log('[v0] Order ID:', orderId);
-  console.log(
-    '[v0] Amount USD:',
-    amount,
-    '=> VND:',
-    amountInVND,
-    '=> x100:',
-    vnpayAmount
-  );
+  console.log('[v0] Amount VND:', amount, '=> x100:', vnpayAmount);
   console.log('[v0] IP Address:', ipAddr);
   console.log('[v0] Create Date:', createDate);
   console.log('[v0] Expire Date:', expireDate);
@@ -182,7 +174,6 @@ export const verifyVNPayResponse = (query) => {
       ? Number.parseInt(vnp_Params.vnp_Amount)
       : 0;
     const amountInVND = amountInCents / 100;
-    const amountInUSD = amountInVND / USD_TO_VND_RATE;
 
     const responseCode = vnp_Params.vnp_ResponseCode || '99';
     const isSuccess = isValid && responseCode === '00';
@@ -195,9 +186,7 @@ export const verifyVNPayResponse = (query) => {
       '[v0] Amount received x100:',
       amountInCents,
       '=> VND:',
-      amountInVND,
-      '=> USD:',
-      amountInUSD
+      amountInVND
     );
     console.log('[v0] Success:', isSuccess);
 
@@ -205,7 +194,7 @@ export const verifyVNPayResponse = (query) => {
       isValid: isValid,
       isSuccess: isSuccess,
       responseCode: responseCode,
-      amount: Number.parseFloat(amountInUSD.toFixed(2)),
+      amount: amountInVND, // Now in VND, not USD
       transactionNo: vnp_Params.vnp_TransactionNo,
       orderId: vnp_Params.vnp_TxnRef,
       payDate: vnp_Params.vnp_PayDate,

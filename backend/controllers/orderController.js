@@ -93,7 +93,7 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
   }
 
   const paidAmount = verification.amount;
-  const tolerance = 1; // $1 tolerance
+  const tolerance = 100000; // 100,000 VND tolerance instead of $1
   const amountDifference = Math.abs(
     paidAmount - Number.parseFloat(order.totalPrice)
   );
@@ -110,7 +110,7 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
   if (amountDifference > tolerance) {
     res.status(400);
     throw new Error(
-      `Số tiền không khớp: ${order.totalPrice}$ vs ${paidAmount}$`
+      `Số tiền không khớp: ${order.totalPrice}₫ vs ${paidAmount}₫`
     );
   }
 
